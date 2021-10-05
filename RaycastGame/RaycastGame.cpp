@@ -36,74 +36,113 @@ struct RGB {
 };
 
 const int pixelPitch = width * sizeof(RGB);
+const size_t pixelBufSize = width * height * sizeof(RGB);
+
+class Window;
 
 class Game {
 public:
-	Game() {
-		sdl_e(SDL_Init(SDL_INIT_EVERYTHING));
+	Game(Window* window);
+	~Game();
 
-		int scale = 3;
-		window = sdl_e(SDL_CreateWindow("Raycast Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width * scale, height * scale, SDL_WINDOW_RESIZABLE));
-		renderer = sdl_e(SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC));
+	void init();
+	void draw();
 
-		sdl_e(SDL_RenderSetLogicalSize(renderer, width, height));
-		sdl_e(SDL_RenderSetIntegerScale(renderer, SDL_TRUE));
-		SDL_SetWindowMinimumSize(window, width, height);
+	RGB& pixel(int x, int y);
 
-		screenTexture = sdl_e(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, width, height));
-		pixelBuf = make_unique<RGB[]>(width * height);
-		pixelPtr = pixelBuf.get();
-	}
-
-	~Game() {
-		if (screenTexture) SDL_DestroyTexture(screenTexture);
-		if (renderer) SDL_DestroyRenderer(renderer);
-		if (window) SDL_DestroyWindow(window);
-
-		SDL_Quit();
-	}
-
-	void run() {
-		for (uint8_t i = 0; i < height; i++) {
-			pixel(i, i) = { i, 0, 0 };
-		}
-
-		while (gameRunning) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				switch (e.type) {
-				case SDL_QUIT:
-					gameRunning = false;
-					break;
-				}
-			}
-
-			SDL_RenderClear(renderer);
-			
-			sdl_e(SDL_UpdateTexture(screenTexture, nullptr, pixelPtr, pixelPitch));
-			SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
-
-			SDL_RenderPresent(renderer);
-		}
-	}
-
-	RGB& pixel(int x, int y) {
-		return pixelPtr[y * width + x];
-	}
-
-private:
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-
-	SDL_Texture* screenTexture;
-	unique_ptr<RGB[]> pixelBuf;
-	RGB* pixelPtr;
-
-	bool gameRunning = true;
+	Window* window;
+	RGB* pixelPtr = nullptr;
 };
 
-int main() {
+class Window {
+public:
+	Window();
+	~Window();
+
+	void init();
+	void run();
+
+	SDL_Window* window = nullptr;
+	SDL_Renderer* renderer = nullptr;
+
+	SDL_Texture* screenTexture = nullptr;
+	unique_ptr<RGB[]> pixelBuf;
+	RGB* pixelPtr = nullptr;
+
+	bool gameRunning = true;
+
 	Game game;
+};
+
+Game::Game(Window* window) : window(window) {}
+
+Game::~Game() {}
+
+void Game::init() {
+	pixelPtr = window->pixelPtr;
+}
+
+void Game::draw() {
+	pixel(0, 0) = { 255, 0, 0 };
+}
+
+RGB& Game::pixel(int x, int y) {
+	return pixelPtr[y * width + x];
+}
+
+Window::Window() : game(this) {}
+
+Window::~Window() {
+	if (screenTexture) SDL_DestroyTexture(screenTexture);
+	if (renderer) SDL_DestroyRenderer(renderer);
+	if (window) SDL_DestroyWindow(window);
+
+	SDL_Quit();
+}
+
+void Window::init() {
+	sdl_e(SDL_Init(SDL_INIT_EVERYTHING));
+
+	int scale = 3;
+	window = sdl_e(SDL_CreateWindow("Raycast Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width * scale, height * scale, SDL_WINDOW_RESIZABLE));
+	renderer = sdl_e(SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC));
+
+	sdl_e(SDL_RenderSetLogicalSize(renderer, width, height));
+	sdl_e(SDL_RenderSetIntegerScale(renderer, SDL_TRUE));
+	SDL_SetWindowMinimumSize(window, width, height);
+
+	screenTexture = sdl_e(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, width, height));
+	pixelBuf = make_unique<RGB[]>(width * height);
+	pixelPtr = pixelBuf.get();
+
+	game.init();
+}
+
+void Window::run() {
+	while (gameRunning) {
+		SDL_Event e;
+		while (SDL_PollEvent(&e)) {
+			switch (e.type) {
+			case SDL_QUIT:
+				gameRunning = false;
+				break;
+			}
+		}
+
+		SDL_RenderClear(renderer);
+
+		memset(pixelPtr, 0, pixelBufSize);
+		game.draw();
+		sdl_e(SDL_UpdateTexture(screenTexture, nullptr, pixelPtr, pixelPitch));
+		SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
+
+		SDL_RenderPresent(renderer);
+	}
+}
+
+int main() {
+	Window game;
+	game.init();
 	game.run();
 
 	return 0;
