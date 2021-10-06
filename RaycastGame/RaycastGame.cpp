@@ -15,7 +15,7 @@ const int width = 320;
 const int height = 240;
 
 const int FPS = 60;
-const float FRAME = 1.0f / FPS;
+const float dt = 1.0f / FPS;
 
 template <class T>
 T sdl_e(T x) {
@@ -47,7 +47,7 @@ struct vec2 {
 };
 
 float degToRad(float d) {
-	return d * M_PI / 180;
+	return d * M_PI / 180.0f;
 }
 
 const int pixelPitch = width * sizeof(RGB);
@@ -76,9 +76,12 @@ public:
 	vec2 pos;
 	float angle;
 	vec2 dir;
+	float camDist;
+	float camY;
 
 	void setPos(vec2 p);
 	void setAngle(float a);
+	void setHeight(float h);
 };
 
 class Window {
@@ -117,18 +120,52 @@ void Game::init() {
 	setFovX(degToRad(70));
 	setPos({ 0, 0 });
 	setAngle(0);
+	setHeight(1);
 }
+
+const float speed = 1;
 
 void Game::update() {
 	//cout << window->time << "\n";
 
 	if (window->keyDown(SDL_SCANCODE_W)) {
-		cout << "w";
+		pos.x += dir.x * speed * dt;
+		pos.y += dir.y * speed * dt;
+	}
+	if (window->keyDown(SDL_SCANCODE_S)) {
+		pos.x -= dir.x * speed * dt;
+		pos.y -= dir.y * speed * dt;
+	}
+
+	if (window->keyDown(SDL_SCANCODE_I)) {
+		setFovX(fovX + degToRad(1));
+	}
+	if (window->keyDown(SDL_SCANCODE_K)) {
+		setFovX(fovX - degToRad(1));
 	}
 }
 
 void Game::draw() {
-	
+	for (int i = 0; i < height / 2; i++) {
+		float y = height / 2 - i;
+		float d = camY * camDist / y;
+		d += pos.x;
+		for (int x = 0; x < width; x++) {
+			pixel(x, i) = { (uint8_t)(d * 255), 0, 0 };
+			/*uint8_t q = (uint8_t)(floorf(2 * fmodf(d, 1)) * 255);
+			pixel(x, i) = { q, q, q };*/
+		}
+	}
+	for (int i = height / 2; i < height; i++) {
+		float y = i - height / 2;
+		float d = camY * camDist / y;
+		d += pos.x;
+		for (int x = 0; x < width; x++) {
+			pixel(x, i) = { (uint8_t)(d * 255), 0, 0 };
+			/*uint8_t q = (uint8_t)(floorf(2 * fmodf(d, 1)) * 255);
+			pixel(x, i) = { q, q, q };*/
+		}
+	}
 }
 
 RGB& Game::pixel(int x, int y) {
@@ -137,8 +174,12 @@ RGB& Game::pixel(int x, int y) {
 
 const float invAspectRatio = height / width;
 void Game::setFovX(float f) {
+	// tan half f
+	float thf = tanf(f * 0.5);
+
 	fovX = f;
-	fovY = 2 * atanf(tanf(f * 0.5) * invAspectRatio);
+	fovY = 2 * atanf(thf * invAspectRatio);
+	camDist = width / (2 * thf);
 }
 
 void Game::setPos(vec2 p) {
@@ -148,6 +189,10 @@ void Game::setPos(vec2 p) {
 void Game::setAngle(float a) {
 	angle = a;
 	dir = { cosf(a), sinf(a) };
+}
+
+void Game::setHeight(float h) {
+	camY = h;
 }
 
 Window::Window() : game(this) {}
@@ -203,8 +248,8 @@ void Window::run() {
 		keyState.resize(numKeys);
 		copy(keyStatePtr, keyStatePtr + numKeys, keyState.begin());
 
-		while (timeAccumulator > FRAME) {
-			timeAccumulator -= FRAME;
+		while (timeAccumulator > dt) {
+			timeAccumulator -= dt;
 			game.update();
 		}
 		//cout << "FRAME\n";
