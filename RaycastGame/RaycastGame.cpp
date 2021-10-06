@@ -1,7 +1,10 @@
 #include <iostream>
-#include <stdexcept>
+#include <vector>
 #include <memory>
+#include <stdexcept>
 #include <cstdint>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -10,6 +13,9 @@ using namespace std;
 
 const int width = 320;
 const int height = 240;
+
+const int FPS = 60;
+const float FRAME = 1.0f / FPS;
 
 template <class T>
 T sdl_e(T x) {
@@ -35,6 +41,15 @@ struct RGB {
 	uint8_t b;
 };
 
+struct vec2 {
+	float x;
+	float y;
+};
+
+float degToRad(float d) {
+	return d * M_PI / 180;
+}
+
 const int pixelPitch = width * sizeof(RGB);
 const size_t pixelBufSize = width * height * sizeof(RGB);
 
@@ -46,12 +61,24 @@ public:
 	~Game();
 
 	void init();
+	void update();
 	void draw();
 
 	RGB& pixel(int x, int y);
 
 	Window* window;
 	RGB* pixelPtr = nullptr;
+
+	float fovX;
+	float fovY;
+	void setFovX(float f);
+
+	vec2 pos;
+	float angle;
+	vec2 dir;
+
+	void setPos(vec2 p);
+	void setAngle(float a);
 };
 
 class Window {
@@ -65,11 +92,17 @@ public:
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 
+	vector<uint8_t> keyState;
+	bool keyDown(int key);
+
 	SDL_Texture* screenTexture = nullptr;
 	unique_ptr<RGB[]> pixelBuf;
 	RGB* pixelPtr = nullptr;
 
 	bool gameRunning = true;
+	float time = 0;
+	float lastTime = 0;
+	float timeAccumulator = 0;
 
 	Game game;
 };
@@ -80,14 +113,41 @@ Game::~Game() {}
 
 void Game::init() {
 	pixelPtr = window->pixelPtr;
+
+	setFovX(degToRad(70));
+	setPos({ 0, 0 });
+	setAngle(0);
+}
+
+void Game::update() {
+	//cout << window->time << "\n";
+
+	if (window->keyDown(SDL_SCANCODE_W)) {
+		cout << "w";
+	}
 }
 
 void Game::draw() {
-	pixel(0, 0) = { 255, 0, 0 };
+	
 }
 
 RGB& Game::pixel(int x, int y) {
 	return pixelPtr[y * width + x];
+}
+
+const float invAspectRatio = height / width;
+void Game::setFovX(float f) {
+	fovX = f;
+	fovY = 2 * atanf(tanf(f * 0.5) * invAspectRatio);
+}
+
+void Game::setPos(vec2 p) {
+	pos = p;
+}
+
+void Game::setAngle(float a) {
+	angle = a;
+	dir = { cosf(a), sinf(a) };
 }
 
 Window::Window() : game(this) {}
@@ -119,7 +179,16 @@ void Window::init() {
 }
 
 void Window::run() {
+	float period = 1.0f / SDL_GetPerformanceFrequency();
+	uint64_t t0 = SDL_GetPerformanceCounter();
+
 	while (gameRunning) {
+		lastTime = time;
+		uint64_t now = SDL_GetPerformanceCounter();
+		time = (now - t0) * period;
+		
+		timeAccumulator += time - lastTime;
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
@@ -128,6 +197,17 @@ void Window::run() {
 				break;
 			}
 		}
+
+		int numKeys;
+		const uint8_t* keyStatePtr = SDL_GetKeyboardState(&numKeys);
+		keyState.resize(numKeys);
+		copy(keyStatePtr, keyStatePtr + numKeys, keyState.begin());
+
+		while (timeAccumulator > FRAME) {
+			timeAccumulator -= FRAME;
+			game.update();
+		}
+		//cout << "FRAME\n";
 
 		SDL_RenderClear(renderer);
 
@@ -138,6 +218,10 @@ void Window::run() {
 
 		SDL_RenderPresent(renderer);
 	}
+}
+
+bool Window::keyDown(int key) {
+	return keyState[key];
 }
 
 int main() {
