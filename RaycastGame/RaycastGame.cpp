@@ -50,6 +50,10 @@ float degToRad(float d) {
 	return d * M_PI / 180.0f;
 }
 
+float lerp(float a, float b, float t) {
+	return a + t * (b - a);
+}
+
 const int pixelPitch = width * sizeof(RGB);
 const size_t pixelBufSize = width * height * sizeof(RGB);
 
@@ -77,7 +81,7 @@ public:
 	float angle;
 	vec2 dir;
 	float camDist;
-	float camY;
+	float camZ;
 
 	void setPos(vec2 p);
 	void setAngle(float a);
@@ -123,8 +127,12 @@ void Game::init() {
 	setHeight(1);
 }
 
-const float speed = 1;
+const float speed = 5;
+const float turnSpeed = M_PI / 2;
 
+float vz = 0;
+float gravity = -10;
+bool canJump = true;
 void Game::update() {
 	//cout << window->time << "\n";
 
@@ -136,6 +144,33 @@ void Game::update() {
 		pos.x -= dir.x * speed * dt;
 		pos.y -= dir.y * speed * dt;
 	}
+	if (window->keyDown(SDL_SCANCODE_A)) {
+		pos.x += dir.y * speed * dt;
+		pos.y -= dir.x * speed * dt;
+	}
+	if (window->keyDown(SDL_SCANCODE_D)) {
+		pos.x -= dir.y * speed * dt;
+		pos.y += dir.x * speed * dt;
+	}
+
+	int turnDir = 0;
+	turnDir += window->keyDown(SDL_SCANCODE_RIGHT);
+	turnDir -= window->keyDown(SDL_SCANCODE_LEFT);
+	if (turnDir != 0) {
+		setAngle(angle + turnDir * turnSpeed * dt);
+	}
+
+	if (canJump && window->keyDown(SDL_SCANCODE_SPACE)) {
+		vz += 5.0f;
+		canJump = false;
+	}
+	camZ += vz * dt;
+	vz += gravity * dt;
+	if (camZ < 1) {
+		camZ = 1;
+		vz = 0;
+		canJump = true;
+	}
 
 	if (window->keyDown(SDL_SCANCODE_I)) {
 		setFovX(fovX + degToRad(1));
@@ -146,24 +181,27 @@ void Game::update() {
 }
 
 void Game::draw() {
-	for (int i = 0; i < height / 2; i++) {
-		float y = height / 2 - i;
-		float d = camY * camDist / y;
-		d += pos.x;
-		for (int x = 0; x < width; x++) {
-			pixel(x, i) = { (uint8_t)(d * 255), 0, 0 };
-			/*uint8_t q = (uint8_t)(floorf(2 * fmodf(d, 1)) * 255);
-			pixel(x, i) = { q, q, q };*/
-		}
-	}
 	for (int i = height / 2; i < height; i++) {
 		float y = i - height / 2;
-		float d = camY * camDist / y;
-		d += pos.x;
+
+		float d = camZ * camDist / y;
+
 		for (int x = 0; x < width; x++) {
-			pixel(x, i) = { (uint8_t)(d * 255), 0, 0 };
-			/*uint8_t q = (uint8_t)(floorf(2 * fmodf(d, 1)) * 255);
-			pixel(x, i) = { q, q, q };*/
+			float rfx = d * (x * 2 - width) / camDist;
+			float rfy = d;
+
+			float fx = pos.x + dir.x * rfy - dir.y * rfx;
+			float fy = pos.y + dir.y * rfy + dir.x * rfx;
+			
+			uint8_t r = (uint8_t)(fabsf(fmodf(floorf(fx) + floorf(fy), 2.0f)) * 255);
+			pixel(x, i) = { r, r, 0 };
+
+			/*uint8_t p = (uint8_t)(floorf(2 * fmodf(fx, 1)) * 255);
+			uint8_t q = (uint8_t)(floorf(2 * fmodf(fy, 1)) * 255);
+			uint8_t r = p ^ q;
+
+			pixel(x, i) = { r, r, 0 };*/
+			//pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
 		}
 	}
 }
@@ -192,7 +230,7 @@ void Game::setAngle(float a) {
 }
 
 void Game::setHeight(float h) {
-	camY = h;
+	camZ = h;
 }
 
 Window::Window() : game(this) {}
@@ -208,7 +246,7 @@ Window::~Window() {
 void Window::init() {
 	sdl_e(SDL_Init(SDL_INIT_EVERYTHING));
 
-	int scale = 3;
+	int scale = 1;
 	window = sdl_e(SDL_CreateWindow("Raycast Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width * scale, height * scale, SDL_WINDOW_RESIZABLE));
 	renderer = sdl_e(SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC));
 
