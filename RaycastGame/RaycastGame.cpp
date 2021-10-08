@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int width = 2560;
-const int height = 1440;
+const int width = 640;
+const int height = 360;
 
 const int FPS = 60;
 const float dt = 1.0f / FPS;
@@ -181,6 +181,10 @@ void Game::update() {
 	}
 }
 
+const uint8_t floorTexture[] = {
+	255, 255,
+	255, 127
+};
 const int halfHeight = height / 2;
 void Game::draw() {
 	for (int i = halfHeight; i < height; i++) {
@@ -203,7 +207,13 @@ void Game::draw() {
 		float fy = fly;
 
 		for (int x = 0; x < width; x++) {
-			pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
+			int fx2 = floorf(fx);
+			int fy2 = floorf(fy);
+
+			uint8_t pix = floorTexture[((fy2 & 1) << 1) + (fx2 & 1)];
+			pixel(x, i) = { pix, pix, 0 };
+
+			//pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
 
 			fx += stepX;
 			fy += stepY;
@@ -257,7 +267,7 @@ void Window::init() {
 	renderer = sdl_e(SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC));
 
 	sdl_e(SDL_RenderSetLogicalSize(renderer, width, height));
-	sdl_e(SDL_RenderSetIntegerScale(renderer, SDL_TRUE));
+	//sdl_e(SDL_RenderSetIntegerScale(renderer, SDL_TRUE));
 	SDL_SetWindowMinimumSize(window, width, height);
 
 	screenTexture = sdl_e(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, width, height));
@@ -275,7 +285,7 @@ void Window::run() {
 		lastTime = time;
 		uint64_t now = SDL_GetPerformanceCounter();
 		time = (now - t0) * period;
-		
+
 		timeAccumulator += time - lastTime;
 
 		SDL_Event e;
