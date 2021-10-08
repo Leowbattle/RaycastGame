@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int width = 1920;
-const int height = 1080;
+const int width = 2560;
+const int height = 1440;
 
 const int FPS = 60;
 const float dt = 1.0f / FPS;
@@ -81,6 +81,7 @@ public:
 	float angle;
 	vec2 dir;
 	float camDist;
+	float invCamDist;
 	float camZ;
 
 	void setPos(vec2 p);
@@ -180,28 +181,32 @@ void Game::update() {
 	}
 }
 
+const int halfHeight = height / 2;
 void Game::draw() {
-	for (int i = height / 2; i < height; i++) {
-		float y = i - height / 2;
+	for (int i = halfHeight; i < height; i++) {
+		float y = i - halfHeight;
 
 		float d = camZ * camDist / y;
 
+		float f1 = width * d * invCamDist;
+
+		float flx = pos.x + dir.x * d - dir.y * -f1;
+		float fly = pos.y + dir.y * d + dir.x * -f1;
+
+		float frx = pos.x + dir.x * d - dir.y * f1;
+		float fry = pos.y + dir.y * d + dir.x * f1;
+
+		float stepX = (frx - flx) / width;
+		float stepY = (fry - fly) / width;
+
+		float fx = flx;
+		float fy = fly;
+
 		for (int x = 0; x < width; x++) {
-			float rfx = d * (x * 2 - width) / camDist;
-			float rfy = d;
-
-			float fx = pos.x + dir.x * rfy - dir.y * rfx;
-			float fy = pos.y + dir.y * rfy + dir.x * rfx;
-			
-			/*uint8_t r = (uint8_t)(fabsf(fmodf(floorf(fx) + floorf(fy), 2.0f)) * 255);
-			pixel(x, i) = { r, r, 0 };*/
-
-			/*uint8_t p = (uint8_t)(floorf(2 * fmodf(fx, 1)) * 255);
-			uint8_t q = (uint8_t)(floorf(2 * fmodf(fy, 1)) * 255);
-			uint8_t r = p ^ q;
-
-			pixel(x, i) = { r, r, 0 };*/
 			pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
+
+			fx += stepX;
+			fy += stepY;
 		}
 	}
 }
@@ -218,6 +223,7 @@ void Game::setFovX(float f) {
 	fovX = f;
 	fovY = 2 * atanf(thf * invAspectRatio);
 	camDist = width / (2 * thf);
+	invCamDist = 1 / camDist;
 }
 
 void Game::setPos(vec2 p) {
