@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int width = 320;
-const int height = 240;
+const int width = 1920;
+const int height = 1080;
 
 const int FPS = 60;
 const float dt = 1.0f / FPS;
@@ -193,15 +193,15 @@ void Game::draw() {
 			float fx = pos.x + dir.x * rfy - dir.y * rfx;
 			float fy = pos.y + dir.y * rfy + dir.x * rfx;
 			
-			uint8_t r = (uint8_t)(fabsf(fmodf(floorf(fx) + floorf(fy), 2.0f)) * 255);
-			pixel(x, i) = { r, r, 0 };
+			/*uint8_t r = (uint8_t)(fabsf(fmodf(floorf(fx) + floorf(fy), 2.0f)) * 255);
+			pixel(x, i) = { r, r, 0 };*/
 
 			/*uint8_t p = (uint8_t)(floorf(2 * fmodf(fx, 1)) * 255);
 			uint8_t q = (uint8_t)(floorf(2 * fmodf(fy, 1)) * 255);
 			uint8_t r = p ^ q;
 
 			pixel(x, i) = { r, r, 0 };*/
-			//pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
+			pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
 		}
 	}
 }
@@ -298,6 +298,10 @@ void Window::run() {
 		game.draw();
 		sdl_e(SDL_UpdateTexture(screenTexture, nullptr, pixelPtr, pixelPitch));
 		SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
+
+		uint64_t frameEnd = SDL_GetPerformanceCounter();
+		float frameTime = (frameEnd - now) * period;
+		cout << frameTime * 1000 << "\n";
 
 		SDL_RenderPresent(renderer);
 	}
