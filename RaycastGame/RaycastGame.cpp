@@ -181,10 +181,24 @@ void Game::update() {
 	}
 }
 
+//const uint8_t floorTexture[] = {
+//	0, 0, 0, 0, 0, 0, 0, 0,
+//	0, 0, 0, 0, 0, 0, 0, 0,
+//	0, 0, 255, 255, 255, 255, 0, 0,
+//	0, 0, 255, 0, 0, 255, 0, 0,
+//	0, 0, 255, 0, 0, 255, 0, 0,
+//	0, 0, 255, 255, 255, 255, 0, 0,
+//	0, 0, 0, 0, 0, 0, 0, 0,
+//	0, 0, 0, 0, 0, 0, 0, 0,
+//};
+//const int texSizeLog = 3;
 const uint8_t floorTexture[] = {
-	255, 255,
-	255, 127
+	127, 255,
+	255, 255
 };
+const int texSizeLog = 1;
+const int texMask = (1 << texSizeLog) - 1;
+
 const int halfHeight = height / 2;
 void Game::draw() {
 	for (int i = halfHeight; i < height; i++) {
@@ -210,7 +224,7 @@ void Game::draw() {
 			int fx2 = floorf(fx);
 			int fy2 = floorf(fy);
 
-			uint8_t pix = floorTexture[((fy2 & 1) << 1) + (fx2 & 1)];
+			uint8_t pix = floorTexture[((fy2 & texMask) << texSizeLog) + (fx2 & texMask)];
 			pixel(x, i) = { pix, pix, 0 };
 
 			//pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
