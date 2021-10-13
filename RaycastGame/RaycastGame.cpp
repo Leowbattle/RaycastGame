@@ -412,9 +412,9 @@ void Game::drawWalls() {
 		RGB colours[] = { {255, 0, 0}, {200, 0, 0} };
 		RGB colour = colours[res.side];
 
-		int y1 = max(camDist * (camZ - 2) / d + height / 2, 0);
+		float wallHeight = 0.5f;
+		int y1 = max(camDist * (camZ - wallHeight) / d + height / 2, 0);
 		int y2 = min(camZ * camDist / d + height / 2, height);
-		//int y2 = min((height + h) / 2, height);
 		for (int y = y1; y < y2; y++) {
 			pixel(x, y) = colour;
 		}
