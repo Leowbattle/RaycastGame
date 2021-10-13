@@ -282,6 +282,7 @@ struct Raycast {
 struct RaycastResult {
 	vec2i tile;
 	float t;
+	int side;
 };
 
 RaycastResult raycastMap(Raycast r) {
@@ -319,6 +320,7 @@ RaycastResult raycastMap(Raycast r) {
 	float tDeltaY = 1 / d.y * stepY;
 
 	float t = 0;
+	int side = 0;
 	while (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
 		if (tmaxX < tmaxY) {
 			tmaxX += tDeltaX;
@@ -326,6 +328,7 @@ RaycastResult raycastMap(Raycast r) {
 
 			if (map[y * mapSize + x] > 0) {
 				t = tmaxX - tDeltaX;
+				side = 0;
 				break;
 			}
 		}
@@ -335,6 +338,7 @@ RaycastResult raycastMap(Raycast r) {
 
 			if (map[y * mapSize + x] > 0) {
 				t = tmaxY - tDeltaY;
+				side = 1;
 				break;
 			}
 		}
@@ -346,7 +350,8 @@ RaycastResult raycastMap(Raycast r) {
 
 	return {
 		{x, y},
-		t
+		t,
+		side
 	};
 }
 
@@ -364,7 +369,7 @@ void Game::drawWalls() {
 	SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
 	SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(dirLen * dir.x), posy + (int)(dirLen * dir.y));
 
-	float u = tan(fovX / 2);
+	float u = tan(fovX / 2) * 2;
 	float rDirX = dir.x + dir.y * u;
 	float rDirY = dir.y - dir.x * u;
 
@@ -404,10 +409,14 @@ void Game::drawWalls() {
 		SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
 		SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(res.t * tileSize * rDirX), posy + (int)(res.t * tileSize * rDirY));
 
-		int y1 = max((height - h) / 2, 0);
-		int y2 = min((height + h) / 2, height);
+		RGB colours[] = { {255, 0, 0}, {200, 0, 0} };
+		RGB colour = colours[res.side];
+
+		int y1 = max(camDist * (camZ - 2) / d + height / 2, 0);
+		int y2 = min(camZ * camDist / d + height / 2, height);
+		//int y2 = min((height + h) / 2, height);
 		for (int y = y1; y < y2; y++) {
-			pixel(x, y) = {255, 0, 0};
+			pixel(x, y) = colour;
 		}
 
 		rDirX += rStepX;
@@ -471,6 +480,7 @@ void Window::init() {
 	game.init();
 }
 
+bool firstPerson = true;
 void Window::run() {
 	float period = 1.0f / SDL_GetPerformanceFrequency();
 	uint64_t t0 = SDL_GetPerformanceCounter();
@@ -508,7 +518,10 @@ void Window::run() {
 		memset(pixelPtr, 0, pixelBufSize);
 		game.draw();
 		sdl_e(SDL_UpdateTexture(screenTexture, nullptr, pixelPtr, pixelPitch));
-		SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
+		if (keyDown(SDL_SCANCODE_T)) {
+			firstPerson = !firstPerson;
+		}
+		if (firstPerson) SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
 
 		uint64_t frameEnd = SDL_GetPerformanceCounter();
 		float frameTime = (frameEnd - now) * period;
