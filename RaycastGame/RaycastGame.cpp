@@ -46,12 +46,25 @@ struct vec2 {
 	float y;
 };
 
+struct vec2i {
+	int x;
+	int y;
+};
+
 float degToRad(float d) {
 	return d * M_PI / 180.0f;
 }
 
 float lerp(float a, float b, float t) {
 	return a + t * (b - a);
+}
+
+int min(int a, int b) {
+	return a < b ? a : b;
+}
+
+int max(int a, int b) {
+	return a > b ? a : b;
 }
 
 const int pixelPitch = width * sizeof(RGB);
@@ -68,10 +81,14 @@ public:
 	void update();
 	void draw();
 
+	void drawFloor();
+	void drawWalls();
+
 	RGB& pixel(int x, int y);
 
 	Window* window;
 	RGB* pixelPtr = nullptr;
+	SDL_Renderer* renderer;
 
 	float fovX;
 	float fovY;
@@ -121,6 +138,7 @@ Game::~Game() {}
 
 void Game::init() {
 	pixelPtr = window->pixelPtr;
+	renderer = window->renderer;
 
 	setFovX(degToRad(70));
 	setPos({ 0, 0 });
@@ -181,6 +199,11 @@ void Game::update() {
 	}
 }
 
+void Game::draw() {
+	drawFloor();
+	drawWalls();
+}
+
 //const uint8_t floorTexture[] = {
 //	0, 0, 0, 0, 0, 0, 0, 0,
 //	0, 0, 0, 0, 0, 0, 0, 0,
@@ -200,7 +223,8 @@ const int texSizeLog = 1;
 const int texMask = (1 << texSizeLog) - 1;
 
 const int halfHeight = height / 2;
-void Game::draw() {
+
+void Game::drawFloor() {
 	for (int i = halfHeight; i < height; i++) {
 		float y = i - halfHeight;
 
@@ -232,6 +256,162 @@ void Game::draw() {
 			fx += stepX;
 			fy += stepY;
 		}
+	}
+}
+
+const uint8_t map[] = {
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 0, 1, 0, 0, 0, 1, 0, 0, 1,
+	1, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 1, 1, 1, 1, 1, 0, 0, 1,
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+const int mapSize = 10;
+const int tileSize = 10;
+
+struct Raycast {
+	vec2 o;
+	vec2 d;
+};
+
+struct RaycastResult {
+	vec2i tile;
+	float t;
+};
+
+RaycastResult raycastMap(Raycast r) {
+	vec2 o = r.o;
+	/*o.x /= tileSize;
+	o.y /= tileSize;*/
+	vec2 d = r.d;
+
+	int x = (int)floorf(o.x);
+	int y = (int)floorf(o.y);
+
+	float stepX = d.x > 0 ? 1 : -1;
+	float stepY = d.y > 0 ? 1 : -1;
+
+	/*float tmaxX = (ceilf(o.x) - o.x) / d.x * stepX;
+	float tmaxY = (ceilf(o.y) - o.y) / d.y * stepY;*/
+
+	float tmaxX = 0;
+	float tmaxY = 0;
+
+	if (stepX == 1) {
+		tmaxX = (x - o.x + 1) / d.x;
+	}
+	else {
+		tmaxX = (x - o.x) / d.x;
+	}
+	if (stepY == 1) {
+		tmaxY = (y - o.y + 1) / d.y;
+	}
+	else {
+		tmaxY = (y - o.y) / d.y;
+	}
+
+	float tDeltaX = 1 / d.x * stepX;
+	float tDeltaY = 1 / d.y * stepY;
+
+	float t = 0;
+	while (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
+		if (tmaxX < tmaxY) {
+			tmaxX += tDeltaX;
+			x += stepX;
+
+			if (map[y * mapSize + x] > 0) {
+				t = tmaxX - tDeltaX;
+				break;
+			}
+		}
+		else {
+			tmaxY += tDeltaY;
+			y += stepY;
+
+			if (map[y * mapSize + x] > 0) {
+				t = tmaxY - tDeltaY;
+				break;
+			}
+		}
+	}
+
+	if (x < 0 || x > mapSize - 1 || y < 0 || y > mapSize - 1) {
+		return { {0, 0}, -1 };
+	}
+
+	return {
+		{x, y},
+		t
+	};
+}
+
+void Game::drawWalls() {
+	int posx = (int)(pos.x * tileSize);
+	int posy = (int)(pos.y * tileSize);
+
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	float rSize = 5;
+	float hRSize = rSize / 2;
+	SDL_Rect rect = {posx - hRSize, posy - hRSize, rSize, rSize};
+	SDL_RenderFillRect(renderer, &rect);
+
+	float dirLen = camDist / 10;
+	SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+	SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(dirLen * dir.x), posy + (int)(dirLen * dir.y));
+
+	float u = tan(fovX / 2);
+	float rDirX = dir.x + dir.y * u;
+	float rDirY = dir.y - dir.x * u;
+
+	float rDirX_R = dir.x - dir.y * u;
+	float rDirY_R = dir.y + dir.x * u;
+	float rStepX = (rDirX_R - rDirX) / width;
+	float rStepY = (rDirY_R - rDirY) / width;
+
+	SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
+	for (int y = 0; y < mapSize; y++) {
+		for (int x = 0; x < mapSize; x++) {
+			if (map[y * mapSize + x] == 0) continue;
+			SDL_Rect rect2 = {x*tileSize, y*tileSize, tileSize, tileSize};
+			SDL_RenderFillRect(renderer, &rect2);
+		}
+	}
+
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	for (int x = 0; x < width; x++) {
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+		//SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(dirLen * rDirX), posy + (int)(dirLen * rDirY));
+
+		Raycast ray = {
+			pos,
+			{rDirX, rDirY}
+		};
+		RaycastResult res = raycastMap(ray);
+		if (res.t == -1) {
+			rDirX += rStepX;
+			rDirY += rStepY;
+			continue;
+		}
+
+		float d = dir.x * res.t * rDirX + dir.y * res.t * rDirY;
+		float h = (int)(camDist / d);
+
+		SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+		SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(res.t * tileSize * rDirX), posy + (int)(res.t * tileSize * rDirY));
+
+		int y1 = max((height - h) / 2, 0);
+		int y2 = min((height + h) / 2, height);
+		for (int y = y1; y < y2; y++) {
+			pixel(x, y) = {255, 0, 0};
+		}
+
+		rDirX += rStepX;
+		rDirY += rStepY;
 	}
 }
 
@@ -322,6 +502,7 @@ void Window::run() {
 		}
 		//cout << "FRAME\n";
 
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
 
 		memset(pixelPtr, 0, pixelBufSize);
