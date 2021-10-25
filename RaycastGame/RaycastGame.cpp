@@ -123,7 +123,9 @@ public:
 	SDL_Renderer* renderer = nullptr;
 
 	vector<uint8_t> keyState;
+	vector<uint8_t> lastKeystate;
 	bool keyDown(int key);
+	bool keyPressed(int key);
 
 	SDL_Texture* screenTexture = nullptr;
 	unique_ptr<RGB[]> pixelBuf;
@@ -524,6 +526,8 @@ void Window::run() {
 			}
 		}
 
+		lastKeystate = keyState;
+
 		int numKeys;
 		const uint8_t* keyStatePtr = SDL_GetKeyboardState(&numKeys);
 		keyState.resize(numKeys);
@@ -541,7 +545,7 @@ void Window::run() {
 		memset(pixelPtr, 0, pixelBufSize);
 		game.draw();
 		sdl_e(SDL_UpdateTexture(screenTexture, nullptr, pixelPtr, pixelPitch));
-		if (keyDown(SDL_SCANCODE_T)) {
+		if (keyPressed(SDL_SCANCODE_T)) {
 			firstPerson = !firstPerson;
 		}
 		if (firstPerson) SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
@@ -556,6 +560,10 @@ void Window::run() {
 
 bool Window::keyDown(int key) {
 	return keyState[key];
+}
+
+bool Window::keyPressed(int key) {
+	return keyState[key] && !lastKeystate[key];
 }
 
 int main() {
