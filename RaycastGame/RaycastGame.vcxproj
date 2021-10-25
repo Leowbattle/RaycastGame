@@ -153,6 +153,22 @@
   <ItemGroup>
     <ClCompile Include="RaycastGame.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stb_image.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="wolf3d\barrel.png" />
+    <Image Include="wolf3d\bluestone.png" />
+    <Image Include="wolf3d\colorstone.png" />
+    <Image Include="wolf3d\eagle.png" />
+    <Image Include="wolf3d\greenlight.png" />
+    <Image Include="wolf3d\greystone.png" />
+    <Image Include="wolf3d\mossy.png" />
+    <Image Include="wolf3d\pillar.png" />
+    <Image Include="wolf3d\purplestone.png" />
+    <Image Include="wolf3d\redbrick.png" />
+    <Image Include="wolf3d\wood.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

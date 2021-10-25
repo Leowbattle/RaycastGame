@@ -13,10 +13,53 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\wolf3d">
+      <UniqueIdentifier>{1b66a6eb-ae79-4e83-a034-226e86ccba8e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RaycastGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stb_image.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="wolf3d\purplestone.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\barrel.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\bluestone.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\colorstone.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\eagle.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\greenlight.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\greystone.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\mossy.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\pillar.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\wood.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
+    <Image Include="wolf3d\redbrick.png">
+      <Filter>Source Files\wolf3d</Filter>
+    </Image>
   </ItemGroup>
 </Project>

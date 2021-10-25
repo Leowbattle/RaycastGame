@@ -9,6 +9,9 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 using namespace std;
 
 const int width = 640;
@@ -104,6 +107,8 @@ public:
 	void setPos(vec2 p);
 	void setAngle(float a);
 	void setHeight(float h);
+
+	vector<RGB> texture;
 };
 
 class Window {
@@ -136,6 +141,23 @@ Game::Game(Window* window) : window(window) {}
 
 Game::~Game() {}
 
+const float HEIGHT = 32;
+
+const float speed = 256;
+const float turnSpeed = M_PI / 2;
+
+float vz = 0;
+float gravity = -320;
+bool canJump = true;
+
+vector<RGB> loadTexture(const char* path) {
+	int x, y, n;
+	RGB* data = (RGB*)stbi_load(path, &x, &y, &n, 0);
+	vector<RGB> pixels;
+	pixels.assign(data, data + y * x);
+	return pixels;
+}
+
 void Game::init() {
 	pixelPtr = window->pixelPtr;
 	renderer = window->renderer;
@@ -143,15 +165,11 @@ void Game::init() {
 	setFovX(degToRad(70));
 	setPos({ 0, 0 });
 	setAngle(0);
-	setHeight(1);
+	setHeight(HEIGHT);
+
+	texture = loadTexture("wolf3d/wood.png");
 }
 
-const float speed = 5;
-const float turnSpeed = M_PI / 2;
-
-float vz = 0;
-float gravity = -10;
-bool canJump = true;
 void Game::update() {
 	//cout << window->time << "\n";
 
@@ -180,13 +198,13 @@ void Game::update() {
 	}
 
 	if (canJump && window->keyDown(SDL_SCANCODE_SPACE)) {
-		vz += 5.0f;
+		vz += 160.0f;
 		canJump = false;
 	}
 	camZ += vz * dt;
 	vz += gravity * dt;
-	if (camZ < 1) {
-		camZ = 1;
+	if (camZ < HEIGHT) {
+		camZ = HEIGHT;
 		vz = 0;
 		canJump = true;
 	}
@@ -215,11 +233,13 @@ void Game::draw() {
 //	0, 0, 0, 0, 0, 0, 0, 0,
 //};
 //const int texSizeLog = 3;
-const uint8_t floorTexture[] = {
-	127, 255,
-	255, 255
-};
-const int texSizeLog = 1;
+//const uint8_t floorTexture[] = {
+//	127, 255,
+//	255, 255
+//};
+//const int texSizeLog = 1;
+//const int texMask = (1 << texSizeLog) - 1;
+const int texSizeLog = 6;
 const int texMask = (1 << texSizeLog) - 1;
 
 const int halfHeight = height / 2;
@@ -248,8 +268,11 @@ void Game::drawFloor() {
 			int fx2 = floorf(fx);
 			int fy2 = floorf(fy);
 
-			uint8_t pix = floorTexture[((fy2 & texMask) << texSizeLog) + (fx2 & texMask)];
-			pixel(x, i) = { pix, pix, 0 };
+			RGB pix = texture[((fy2 & texMask) << texSizeLog) + (fx2 & texMask)];
+			pixel(x, i) = pix;
+
+			/*uint8_t pix = floorTexture[((fy2 & texMask) << texSizeLog) + (fx2 & texMask)];
+			pixel(x, i) = { pix, pix, 0 };*/
 
 			//pixel(x, i) = { (uint8_t)(fx * 255), (uint8_t)(fy * 255), 0 };
 
