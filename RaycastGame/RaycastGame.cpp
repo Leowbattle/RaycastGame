@@ -149,6 +149,9 @@ const float HEIGHT = 32;
 const float speed = 256;
 const float turnSpeed = M_PI / 2;
 
+const float mouseSensitivity = 0.01f;
+int mouseRelX;
+
 float vz = 0;
 float gravity = -320;
 bool canJump = true;
@@ -199,6 +202,10 @@ void Game::update() {
 	turnDir -= window->keyDown(SDL_SCANCODE_LEFT);
 	if (turnDir != 0) {
 		setAngle(angle + turnDir * turnSpeed * dt);
+	}
+
+	if (mouseRelX != 0) {
+		setAngle(angle + mouseRelX * mouseSensitivity);
 	}
 
 	if (canJump && window->keyDown(SDL_SCANCODE_SPACE)) {
@@ -536,11 +543,16 @@ void Window::run() {
 
 		timeAccumulator += time - lastTime;
 
+		mouseRelX = 0;
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			switch (e.type) {
 			case SDL_QUIT:
 				gameRunning = false;
+				break;
+			case SDL_MOUSEMOTION:
+				mouseRelX = e.motion.xrel;
 				break;
 			}
 		}
@@ -568,6 +580,10 @@ void Window::run() {
 			firstPerson = !firstPerson;
 		}
 		if (firstPerson) SDL_RenderCopy(renderer, screenTexture, nullptr, nullptr);
+
+		if (keyPressed(SDL_SCANCODE_ESCAPE)) {
+			SDL_SetRelativeMouseMode((SDL_bool)!SDL_GetRelativeMouseMode());
+		}
 
 		uint64_t frameEnd = SDL_GetPerformanceCounter();
 		float frameTime = (frameEnd - now) * period;
