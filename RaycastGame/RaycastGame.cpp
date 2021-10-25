@@ -109,6 +109,7 @@ public:
 	void setHeight(float h);
 
 	vector<RGB> texture;
+	vector<RGB> texture2;
 };
 
 class Window {
@@ -170,6 +171,7 @@ void Game::init() {
 	setHeight(HEIGHT);
 
 	texture = loadTexture("wolf3d/wood.png");
+	texture2 = loadTexture("wolf3d/eagle.png");
 }
 
 void Game::update() {
@@ -243,6 +245,7 @@ void Game::draw() {
 //const int texMask = (1 << texSizeLog) - 1;
 const int texSizeLog = 6;
 const int texMask = (1 << texSizeLog) - 1;
+const int textureSize = 1 << texSizeLog;
 
 const int halfHeight = height / 2;
 
@@ -297,7 +300,6 @@ const uint8_t map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
 const int mapSize = 10;
-const int tileSize = 10;
 
 struct Raycast {
 	vec2 o;
@@ -312,12 +314,12 @@ struct RaycastResult {
 
 RaycastResult raycastMap(Raycast r) {
 	vec2 o = r.o;
-	/*o.x /= tileSize;
-	o.y /= tileSize;*/
+	o.x /= textureSize;
+	o.y /= textureSize;
 	vec2 d = r.d;
 
-	int x = (int)floorf(o.x);
-	int y = (int)floorf(o.y);
+	int mapX = (int)floorf(o.x);
+	int mapY = (int)floorf(o.y);
 
 	float stepX = d.x > 0 ? 1 : -1;
 	float stepY = d.y > 0 ? 1 : -1;
@@ -329,16 +331,16 @@ RaycastResult raycastMap(Raycast r) {
 	float tmaxY = 0;
 
 	if (stepX == 1) {
-		tmaxX = (x - o.x + 1) / d.x;
+		tmaxX = (mapX - o.x + 1) / d.x;
 	}
 	else {
-		tmaxX = (x - o.x) / d.x;
+		tmaxX = (mapX - o.x) / d.x;
 	}
 	if (stepY == 1) {
-		tmaxY = (y - o.y + 1) / d.y;
+		tmaxY = (mapY - o.y + 1) / d.y;
 	}
 	else {
-		tmaxY = (y - o.y) / d.y;
+		tmaxY = (mapY - o.y) / d.y;
 	}
 
 	float tDeltaX = 1 / d.x * stepX;
@@ -346,12 +348,12 @@ RaycastResult raycastMap(Raycast r) {
 
 	float t = 0;
 	int side = 0;
-	while (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
+	while (mapX >= 0 && mapX < mapSize && mapY >= 0 && mapY < mapSize) {
 		if (tmaxX < tmaxY) {
 			tmaxX += tDeltaX;
-			x += stepX;
+			mapX += stepX;
 
-			if (map[y * mapSize + x] > 0) {
+			if (map[mapY * mapSize + mapX] > 0) {
 				t = tmaxX - tDeltaX;
 				side = 0;
 				break;
@@ -359,9 +361,9 @@ RaycastResult raycastMap(Raycast r) {
 		}
 		else {
 			tmaxY += tDeltaY;
-			y += stepY;
+			mapY += stepY;
 
-			if (map[y * mapSize + x] > 0) {
+			if (map[mapY * mapSize + mapX] > 0) {
 				t = tmaxY - tDeltaY;
 				side = 1;
 				break;
@@ -369,23 +371,23 @@ RaycastResult raycastMap(Raycast r) {
 		}
 	}
 
-	if (x < 0 || x > mapSize - 1 || y < 0 || y > mapSize - 1) {
+	if (mapX < 0 || mapX > mapSize - 1 || mapY < 0 || mapY > mapSize - 1) {
 		return { {0, 0}, -1 };
 	}
 
 	return {
-		{x, y},
-		t,
+		{(int)(o.x + t * d.x), (int)(o.y + t * d.y)},
+		t * textureSize,
 		side
 	};
 }
 
 void Game::drawWalls() {
-	int posx = (int)(pos.x * tileSize);
-	int posy = (int)(pos.y * tileSize);
+	int posx = (int)(pos.x * textureSize);
+	int posy = (int)(pos.y * textureSize);
 
 	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-	float rSize = 5;
+	float rSize = 1;
 	float hRSize = rSize / 2;
 	SDL_Rect rect = {posx - hRSize, posy - hRSize, rSize, rSize};
 	SDL_RenderFillRect(renderer, &rect);
@@ -407,7 +409,7 @@ void Game::drawWalls() {
 	for (int y = 0; y < mapSize; y++) {
 		for (int x = 0; x < mapSize; x++) {
 			if (map[y * mapSize + x] == 0) continue;
-			SDL_Rect rect2 = {x*tileSize, y*tileSize, tileSize, tileSize};
+			SDL_Rect rect2 = {x* textureSize, y* textureSize, textureSize, textureSize };
 			SDL_RenderFillRect(renderer, &rect2);
 		}
 	}
@@ -429,19 +431,36 @@ void Game::drawWalls() {
 		}
 
 		float d = dir.x * res.t * rDirX + dir.y * res.t * rDirY;
-		float h = (int)(camDist / d);
+
+		float wallX;
+		if (res.side == 0) {
+			wallX = pos.y + d * rDirY;
+		}
+		else {
+			wallX = pos.x + d * rDirX;
+		}
+		//wallX -= floorf(wallX);
+		int texX = (int)(wallX * 1) % textureSize;
+		/*if (res.side == 0 && rDirX > 0) texX = textureSize - texX - 1;
+		if (res.side == 1 && rDirX < 0) texX = textureSize - texX - 1;*/
 
 		SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-		SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(res.t * tileSize * rDirX), posy + (int)(res.t * tileSize * rDirY));
+		SDL_RenderDrawLine(renderer, posx, posy, posx + (int)(res.t * textureSize * rDirX), posy + (int)(res.t * textureSize * rDirY));
 
 		RGB colours[] = { {255, 0, 0}, {200, 0, 0} };
 		RGB colour = colours[res.side];
 
-		float wallHeight = 0.5f;
+		float wallHeight = 32;
 		int y1 = max(camDist * (camZ - wallHeight) / d + height / 2, 0);
 		int y2 = min(camZ * camDist / d + height / 2, height);
+
+		float step = textureSize / (float)((camZ * camDist / d + height / 2) - (camDist * (camZ - wallHeight) / d + height / 2));
+		//float texY = (y1 - camZ / 2 + h / 2) * step;
+		float texY = 0;
 		for (int y = y1; y < y2; y++) {
-			pixel(x, y) = colour;
+			pixel(x, y) = texture2[(((int)texY) & (textureSize - 1)) * textureSize + texX];
+
+			texY += step;
 		}
 
 		rDirX += rStepX;
