@@ -75,6 +75,11 @@ const size_t pixelBufSize = width * height * sizeof(RGB);
 
 class Window;
 
+class Sprite {
+public:
+	vec2 pos;
+};
+
 class Game {
 public:
 	Game(Window* window);
@@ -86,6 +91,9 @@ public:
 
 	void drawFloor();
 	void drawWalls();
+	void drawSprites();
+
+	vector<Sprite> sprites;
 
 	RGB& pixel(int x, int y);
 
@@ -110,6 +118,7 @@ public:
 
 	vector<RGB> texture;
 	vector<RGB> texture2;
+	vector<RGB> barrelTexture;
 };
 
 class Window {
@@ -175,6 +184,9 @@ void Game::init() {
 
 	texture = loadTexture("wolf3d/wood.png");
 	texture2 = loadTexture("wolf3d/eagle.png");
+	barrelTexture = loadTexture("wolf3d/barrel.png");
+
+	sprites.push_back(Sprite{ 4*64, 6*64 });
 }
 
 void Game::update() {
@@ -231,6 +243,7 @@ void Game::update() {
 void Game::draw() {
 	drawFloor();
 	drawWalls();
+	drawSprites();
 }
 
 //const uint8_t floorTexture[] = {
@@ -475,6 +488,26 @@ void Game::drawWalls() {
 
 		rDirX += rStepX;
 		rDirY += rStepY;
+	}
+}
+
+void Game::drawSprites() {
+	for (int i = 0; i < sprites.size(); i++) {
+		const Sprite* sprite = &sprites[i];
+		vec2 p = sprite->pos;
+		p.x -= pos.x;
+		p.y -= pos.y;
+
+		float d2 = p.x * dir.x + p.y * dir.y - camDist;
+		float sx = camDist * (p.y * dir.x - p.x * dir.y) / (camDist + p.x * dir.x + p.y * dir.y);
+		sx += width / 2;
+
+		int x1 = (int)fmaxf(sx - textureSize / 2, 0);
+		int x2 = (int)fminf(sx + textureSize / 2, width);
+
+		for (int x = x1; x < x2; x++) {
+			pixel(x, halfHeight) = { 255, 0, 0 };
+		}
 	}
 }
 
