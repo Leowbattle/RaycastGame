@@ -462,8 +462,11 @@ void Game::drawWalls() {
 		int y2 = min(camZ * camDist / d + height / 2, height);
 
 		float step = textureSize / (float)((camZ * camDist / d + height / 2) - (camDist * (camZ - wallHeight) / d + height / 2));
-		float texY = (y1 - camZ / 2 + height / 2) * step;
-		//float texY = 0;
+		//float texY = (y1 - camZ / 2 + height / 2) * step;
+		float texY = 0;
+		if (y1 == 0) {
+			texY -= step * (camDist * (camZ - wallHeight) / d + height / 2);
+		}
 		for (int y = y1; y < y2; y++) {
 			pixel(x, y) = texture2[(((int)texY) & (textureSize - 1)) * textureSize + texX];
 
