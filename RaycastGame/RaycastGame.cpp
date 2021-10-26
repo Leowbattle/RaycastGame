@@ -144,7 +144,7 @@ Game::Game(Window* window) : window(window) {}
 
 Game::~Game() {}
 
-const float HEIGHT = 32;
+const float HEIGHT = 16;
 
 const float speed = 256;
 const float turnSpeed = M_PI / 2;
@@ -462,8 +462,8 @@ void Game::drawWalls() {
 		int y2 = min(camZ * camDist / d + height / 2, height);
 
 		float step = textureSize / (float)((camZ * camDist / d + height / 2) - (camDist * (camZ - wallHeight) / d + height / 2));
-		//float texY = (y1 - camZ / 2 + h / 2) * step;
-		float texY = 0;
+		float texY = (y1 - camZ / 2 + height / 2) * step;
+		//float texY = 0;
 		for (int y = y1; y < y2; y++) {
 			pixel(x, y) = texture2[(((int)texY) & (textureSize - 1)) * textureSize + texX];
 
