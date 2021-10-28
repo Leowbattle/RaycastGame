@@ -107,15 +107,18 @@ public:
 	void setFovX(float f);
 
 	vec2 pos;
+	float posZ;
 	float angle;
 	vec2 dir;
 	float camDist;
 	float invCamDist;
 	float camZ;
 
+	float bobZ;
+	float bobTimer;
+
 	void setPos(vec2 p);
 	void setAngle(float a);
-	void setHeight(float h);
 
 	vector<RGB> texture;
 	vector<RGB> texture2;
@@ -167,6 +170,10 @@ float vz = 0;
 float gravity = -320;
 bool canJump = true;
 
+float bobFreq = 10;
+float bobAmp = 4;
+float bobDecay = 0.99f;
+
 vector<RGB> loadTexture(const char* path) {
 	int x, y, n;
 	RGB* data = (RGB*)stbi_load(path, &x, &y, &n, 0);
@@ -182,7 +189,12 @@ void Game::init() {
 	setFovX(degToRad(70));
 	setPos({ 0, 0 });
 	setAngle(0);
-	setHeight(HEIGHT);
+	
+	posZ = HEIGHT;
+	camZ = posZ;
+
+	bobZ = 0;
+	bobTimer = 0;
 
 	texture = loadTexture("wolf3d/wood.png");
 	texture2 = loadTexture("wolf3d/eagle.png");
@@ -197,21 +209,31 @@ void Game::init() {
 void Game::update() {
 	//cout << window->time << "\n";
 
+	bool moving = false;
 	if (window->keyDown(SDL_SCANCODE_W)) {
 		pos.x += dir.x * speed * dt;
 		pos.y += dir.y * speed * dt;
+		moving = true;
 	}
 	if (window->keyDown(SDL_SCANCODE_S)) {
 		pos.x -= dir.x * speed * dt;
 		pos.y -= dir.y * speed * dt;
+		moving = true;
 	}
 	if (window->keyDown(SDL_SCANCODE_A)) {
 		pos.x += dir.y * speed * dt;
 		pos.y -= dir.x * speed * dt;
+		moving = true;
 	}
 	if (window->keyDown(SDL_SCANCODE_D)) {
 		pos.x -= dir.y * speed * dt;
 		pos.y += dir.x * speed * dt;
+		moving = true;
+	}
+
+	if (moving) {
+		bobZ = sinf(bobTimer * bobFreq) * bobAmp;
+		bobTimer += dt;
 	}
 
 	int turnDir = 0;
@@ -229,10 +251,10 @@ void Game::update() {
 		vz += 160.0f;
 		canJump = false;
 	}
-	camZ += vz * dt;
+	posZ += vz * dt;
 	vz += gravity * dt;
-	if (camZ < HEIGHT) {
-		camZ = HEIGHT;
+	if (posZ < HEIGHT) {
+		posZ = HEIGHT;
 		vz = 0;
 		canJump = true;
 	}
@@ -243,6 +265,8 @@ void Game::update() {
 	if (window->keyDown(SDL_SCANCODE_K)) {
 		setFovX(fovX - degToRad(1));
 	}
+
+	camZ = posZ + bobZ;
 }
 
 void Game::draw() {
@@ -602,10 +626,6 @@ void Game::setPos(vec2 p) {
 void Game::setAngle(float a) {
 	angle = a;
 	dir = { cosf(a), sinf(a) };
-}
-
-void Game::setHeight(float h) {
-	camZ = h;
 }
 
 Window::Window() : game(this) {}
