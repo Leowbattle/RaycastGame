@@ -502,18 +502,30 @@ void Game::drawSprites() {
 		float sy = p.x * dir.x + p.y * dir.y;
 		float sx = p.y * dir.x - p.x * dir.y;
 
+		if (sy < 0) {
+			continue;
+		}
+
 		float q = sx / sy;
+
+		printf("%f %f\n", sx, sy);
+
 		q *= camDist/2;
-
-		//printf("%f %f\n", sx, sy);
-
 		q += width / 2;
 
-		int x1 = (int)fmaxf(q - textureSize / 2, 0);
-		int x2 = (int)fminf(q + textureSize / 2, width);
+		/*int x1 = (int)fmaxf(q - textureSize / 2, 0);
+		int x2 = (int)fminf(q + textureSize / 2, width);*/
+
+		int x1 = (int)fmaxf((sx - textureSize / 4) / sy * camDist/2 + width / 2, 0);
+		int x2 = (int)fminf((sx + textureSize / 4) / sy * camDist / 2 + width / 2, width);
+
+		int y1 = (int)fmaxf(camDist * (camZ - textureSize/4) / sy + height / 2, 0);
+		int y2 = (int)fminf(camZ * camDist / sy + height / 2, height);
 
 		for (int x = x1; x < x2; x++) {
-			pixel(x, halfHeight) = { 255, 0, 0 };
+			for (int y = y1; y < y2; y++) {
+				pixel(x, y) = { 255, 0, 0 };
+			}
 		}
 	}
 }
