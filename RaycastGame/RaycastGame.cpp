@@ -187,6 +187,9 @@ void Game::init() {
 	barrelTexture = loadTexture("wolf3d/barrel.png");
 
 	sprites.push_back(Sprite{ 4*64, 6*64 });
+	sprites.push_back(Sprite{ 3*64, 6*64 });
+	sprites.push_back(Sprite{ 4*64, 5*64 });
+	sprites.push_back(Sprite{ 3*64, 5*64 });
 }
 
 void Game::update() {
@@ -516,16 +519,31 @@ void Game::drawSprites() {
 		/*int x1 = (int)fmaxf(q - textureSize / 2, 0);
 		int x2 = (int)fminf(q + textureSize / 2, width);*/
 
-		int x1 = (int)fmaxf((sx - textureSize / 4) / sy * camDist/2 + width / 2, 0);
-		int x2 = (int)fminf((sx + textureSize / 4) / sy * camDist / 2 + width / 2, width);
+		int x1 = (int)fmaxf((sx - textureSize/2) / sy * camDist/2 + width / 2, 0);
+		int x2 = (int)fminf((sx + textureSize/2) / sy * camDist / 2 + width / 2, width);
 
-		int y1 = (int)fmaxf(camDist * (camZ - textureSize/4) / sy + height / 2, 0);
+		int y1 = (int)fmaxf(camDist * (camZ - textureSize/2) / sy + height / 2, 0);
 		int y2 = (int)fminf(camZ * camDist / sy + height / 2, height);
+
+		float texX = 0;
+		float texY = 0;
+
+		float stepX = (textureSize) / (float)(x2 - x1);
+		float stepY = (textureSize) / (float)(y2 - y1);
 
 		for (int x = x1; x < x2; x++) {
 			for (int y = y1; y < y2; y++) {
-				pixel(x, y) = { 255, 0, 0 };
+				RGB colour = barrelTexture[(((int)texY) & (textureSize - 1)) * textureSize + texX];
+				if (colour.r == 0 && colour.g == 0 && colour.b == 0) {
+					texY += stepY;
+					continue;
+				}
+				pixel(x, y) = colour;
+
+				texY += stepY;
 			}
+			texX += stepX;
+			texY = 0;
 		}
 	}
 }
