@@ -5,6 +5,7 @@
 #include <cstdint>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <algorithm>
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -495,6 +496,20 @@ void Game::drawWalls() {
 }
 
 void Game::drawSprites() {
+	sort(sprites.begin(), sprites.end(), [&](const Sprite& a, const Sprite& b) {
+		vec2 p = a.pos;
+		p.x -= pos.x;
+		p.y -= pos.y;
+		float da = p.x * dir.x + p.y * dir.y;
+
+		p = b.pos;
+		p.x -= pos.x;
+		p.y -= pos.y;
+		float db = p.x * dir.x + p.y * dir.y;
+
+		return da > db;
+	});
+
 	for (int i = 0; i < sprites.size(); i++) {
 		const Sprite* sprite = &sprites[i];
 		vec2 p = sprite->pos;
