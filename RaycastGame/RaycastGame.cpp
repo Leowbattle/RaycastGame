@@ -528,8 +528,16 @@ void Game::drawSprites() {
 		float texX = 0;
 		float texY = 0;
 
-		float stepX = (textureSize) / (float)(x2 - x1);
-		float stepY = (textureSize) / (float)(y2 - y1);
+		float stepX = (textureSize) / (float)(((sx + textureSize / 2) / sy * camDist / 2 + width / 2) - ((sx - textureSize / 2) / sy * camDist / 2 + width / 2));
+		float stepY = (textureSize) / (float)((camZ * camDist / sy + height / 2) - (camDist * (camZ - textureSize / 2) / sy + height / 2));
+
+		if (x1 == 0) {
+			texX -= stepX * ((sx - textureSize / 2) / sy * camDist / 2 + width / 2);
+		}
+		if (y1 == 0) {
+			texY -= stepY * (camDist * (camZ - textureSize / 2) / sy + height / 2);
+		}
+		float texY1 = texY;
 
 		for (int x = x1; x < x2; x++) {
 			for (int y = y1; y < y2; y++) {
@@ -543,7 +551,7 @@ void Game::drawSprites() {
 				texY += stepY;
 			}
 			texX += stepX;
-			texY = 0;
+			texY = texY1;
 		}
 	}
 }
