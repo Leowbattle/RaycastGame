@@ -115,7 +115,7 @@ public:
 	float camZ;
 
 	float bobZ;
-	float bobTimer;
+	float bobM;
 
 	void setPos(vec2 p);
 	void setAngle(float a);
@@ -168,11 +168,13 @@ int mouseRelX;
 
 float vz = 0;
 float gravity = -320;
+float jumpPower = 100;
 bool canJump = true;
 
 float bobFreq = 10;
-float bobAmp = 4;
-float bobDecay = 0.99f;
+float bobAmp = 2;
+float bobGrow = 20;
+float bobDecay = 20;
 
 vector<RGB> loadTexture(const char* path) {
 	int x, y, n;
@@ -194,7 +196,7 @@ void Game::init() {
 	camZ = posZ;
 
 	bobZ = 0;
-	bobTimer = 0;
+	bobM = 0;
 
 	texture = loadTexture("wolf3d/wood.png");
 	texture2 = loadTexture("wolf3d/eagle.png");
@@ -232,9 +234,13 @@ void Game::update() {
 	}
 
 	if (moving) {
-		bobZ = sinf(bobTimer * bobFreq) * bobAmp;
-		bobTimer += dt;
+		bobM = fminf(bobM + bobGrow * dt, 1);
+		//bobTimer += dt;
 	}
+	else {
+		bobM -= bobM * bobDecay * dt;
+	}
+	bobZ = sinf(window->time * bobFreq) * bobAmp * bobM;
 
 	int turnDir = 0;
 	turnDir += window->keyDown(SDL_SCANCODE_RIGHT);
@@ -248,7 +254,7 @@ void Game::update() {
 	}
 
 	if (canJump && window->keyDown(SDL_SCANCODE_SPACE)) {
-		vz += 160.0f;
+		vz += jumpPower;
 		canJump = false;
 	}
 	posZ += vz * dt;
@@ -266,7 +272,12 @@ void Game::update() {
 		setFovX(fovX - degToRad(1));
 	}
 
-	camZ = posZ + bobZ;
+	if (posZ <= HEIGHT) {
+		camZ = posZ + bobZ;
+	}
+	else {
+		camZ = posZ;
+	}
 }
 
 void Game::draw() {
