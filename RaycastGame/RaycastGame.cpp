@@ -314,7 +314,7 @@ const uint8_t map[] = {
 	1, 0, 1, 1, 1, 1, 1, 0, 0, 1,
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	1, 0, 0, 0, 1, 0, 0, 0, 0, 1,
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 	1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -495,15 +495,22 @@ void Game::drawSprites() {
 	for (int i = 0; i < sprites.size(); i++) {
 		const Sprite* sprite = &sprites[i];
 		vec2 p = sprite->pos;
+
 		p.x -= pos.x;
 		p.y -= pos.y;
 
-		float d2 = p.x * dir.x + p.y * dir.y - camDist;
-		float sx = camDist * (p.y * dir.x - p.x * dir.y) / (camDist + p.x * dir.x + p.y * dir.y);
-		sx += width / 2;
+		float sy = p.x * dir.x + p.y * dir.y;
+		float sx = p.y * dir.x - p.x * dir.y;
 
-		int x1 = (int)fmaxf(sx - textureSize / 2, 0);
-		int x2 = (int)fminf(sx + textureSize / 2, width);
+		float q = sx / sy;
+		q *= camDist/2;
+
+		//printf("%f %f\n", sx, sy);
+
+		q += width / 2;
+
+		int x1 = (int)fmaxf(q - textureSize / 2, 0);
+		int x2 = (int)fminf(q + textureSize / 2, width);
 
 		for (int x = x1; x < x2; x++) {
 			pixel(x, halfHeight) = { 255, 0, 0 };
@@ -623,7 +630,7 @@ void Window::run() {
 
 		uint64_t frameEnd = SDL_GetPerformanceCounter();
 		float frameTime = (frameEnd - now) * period;
-		cout << frameTime * 1000 << "\n";
+		//cout << frameTime * 1000 << "\n";
 
 		SDL_RenderPresent(renderer);
 	}
