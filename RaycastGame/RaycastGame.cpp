@@ -140,6 +140,7 @@ public:
 
 	SDL_Texture* screenTexture = nullptr;
 	unique_ptr<RGB[]> pixelBuf;
+	unique_ptr<float[]> depthBuf;
 	RGB* pixelPtr = nullptr;
 
 	bool gameRunning = true;
@@ -455,6 +456,7 @@ void Game::drawWalls() {
 		}
 
 		float d = dir.x * res.t * rDirX + dir.y * res.t * rDirY;
+		window->depthBuf[x] = d;
 
 		float wallX;
 		if (res.side == 0) {
@@ -555,6 +557,13 @@ void Game::drawSprites() {
 		float texY1 = texY;
 
 		for (int x = x1; x < x2; x++) {
+			if (window->depthBuf[x] < sy) {
+				texX += stepX;
+				texY = texY1;
+
+				continue;
+			}
+
 			for (int y = y1; y < y2; y++) {
 				RGB colour = barrelTexture[(((int)texY) & (textureSize - 1)) * textureSize + texX];
 				if (colour.r == 0 && colour.g == 0 && colour.b == 0) {
@@ -623,6 +632,8 @@ void Window::init() {
 	screenTexture = sdl_e(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, width, height));
 	pixelBuf = make_unique<RGB[]>(width * height);
 	pixelPtr = pixelBuf.get();
+
+	depthBuf = make_unique<float[]>(width);
 
 	game.init();
 }
