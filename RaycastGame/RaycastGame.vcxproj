@@ -157,6 +157,7 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="sus.png" />
     <Image Include="wolf3d\barrel.png" />
     <Image Include="wolf3d\bluestone.png" />
     <Image Include="wolf3d\colorstone.png" />

@@ -61,5 +61,8 @@
     <Image Include="wolf3d\redbrick.png">
       <Filter>Source Files\wolf3d</Filter>
     </Image>
+    <Image Include="sus.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

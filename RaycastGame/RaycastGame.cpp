@@ -200,7 +200,7 @@ void Game::init() {
 
 	texture = loadTexture("wolf3d/wood.png");
 	texture2 = loadTexture("wolf3d/eagle.png");
-	barrelTexture = loadTexture("wolf3d/barrel.png");
+	barrelTexture = loadTexture("sus.png");
 
 	sprites.push_back(Sprite{ 4*64, 6*64 });
 	sprites.push_back(Sprite{ 3*64, 6*64 });
@@ -601,7 +601,7 @@ void Game::drawSprites() {
 
 			for (int y = y1; y < y2; y++) {
 				RGB colour = barrelTexture[(((int)texY) & (textureSize - 1)) * textureSize + texX];
-				if (colour.r == 0 && colour.g == 0 && colour.b == 0) {
+				if (colour.r == 255 && colour.g == 0 && colour.b == 255) {
 					texY += stepY;
 					continue;
 				}
